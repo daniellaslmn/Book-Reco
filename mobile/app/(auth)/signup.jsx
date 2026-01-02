@@ -1,5 +1,5 @@
-import { View, Text, Platform, KeyboardAvoidingView, TextInput, TouchableOpacity, handleSignUp } from "react-native";
-import styles from "../../assets/images/styles/signup.styles";
+import { View, Text, Platform, KeyboardAvoidingView, TextInput, TouchableOpacity, handleSignUp, ActivityIndicator, Alert } from "react-native";
+import styles from "../../assets/styles/signup.styles";
 import { Ionicons } from "@expo/vector-icons";
 import COLORS from "../../constants/colors";
 import { useState } from "react";

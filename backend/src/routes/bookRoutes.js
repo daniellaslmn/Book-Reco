@@ -51,11 +51,11 @@ router.get("/", protectRoute, async (req, res) => {
       .populate("user", "username profileImage");
 
     const totalBooks = await Book.countDocuments();
-
+ 
     res.send({
       books,
-      currentPage: page,
-      totalBooks,
+      // currentPage: page,
+      // totalBooks,
       totalPages: Math.ceil(totalBooks / limit),
     });
   } catch (error) {

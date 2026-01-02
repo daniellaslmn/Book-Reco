@@ -1,4 +1,5 @@
 // FOREST
+/*
 const COLORS = {
   primary: "#4CAF50",
   textPrimary: "#2e5a2e",
@@ -12,6 +13,7 @@ const COLORS = {
   white: "#ffffff",
   black: "#000000",
 };
+*/
 
 // RETRO
 /*
@@ -46,6 +48,25 @@ const COLORS = {
   black: "#000000",
 };
 */
+
+// VIOLET
+
+const COLORS = {
+  primary: "#7C4DFF",        
+  textPrimary: "#4A2C82",    
+  textSecondary: "#8E7CC3",  
+  textDark: "#2E1A47",       
+  placeholderText: "#7A6FA8",
+  background: "#F3EFFF",     
+  cardBackground: "#FAF8FF",
+  inputBackground: "#F1ECFF",
+  border: "#D1C4E9",
+  white: "#ffffff",
+  black: "#000000",
+};
+
+
+
 
 // BLOSSOM
 /*

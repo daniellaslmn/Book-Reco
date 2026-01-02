@@ -1,4 +1,3 @@
-// styles/create.styles.js
 import { StyleSheet } from "react-native";
 import COLORS from "../../constants/colors";
 
@@ -77,6 +76,7 @@ const styles = StyleSheet.create({
     padding: 12,
     height: 100,
     color: COLORS.textDark,
+    textAlignVertical: "top", //--------------
   },
   ratingContainer: {
     flexDirection: "row",

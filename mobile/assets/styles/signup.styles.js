@@ -1,8 +1,5 @@
-// styles/login.styles.js
-import { StyleSheet, Dimensions } from "react-native";
-import COLORS from "../../../constants/colors";
-
-const { width } = Dimensions.get("window");
+import { StyleSheet } from "react-native";
+import COLORS from "../../constants/colors";
 
 const styles = StyleSheet.create({
   container: {
@@ -10,18 +7,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     padding: 20,
     justifyContent: "center",
-  },
-  scrollViewStyle: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  topIllustration: {
-    alignItems: "center",
-    width: "100%",
-  },
-  illustrationImage: {
-    width: width * 0.75,
-    height: width * 0.75,
   },
   card: {
     backgroundColor: COLORS.cardBackground,
@@ -34,16 +19,16 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 2,
     borderColor: COLORS.border,
-    marginTop: -24,
   },
   header: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 32,
   },
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    fontFamily: "JetBrainsMono-Medium",
+    color: COLORS.primary,
     marginBottom: 8,
   },
   subtitle: {
@@ -51,12 +36,8 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: "center",
   },
-  formContainer: {
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
+  formContainer: { marginBottom: 16 },
+  inputGroup: { marginBottom: 20 },
   label: {
     fontSize: 14,
     marginBottom: 8,
@@ -72,17 +53,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     paddingHorizontal: 12,
   },
-  inputIcon: {
-    marginRight: 10,
-  },
+  inputIcon: { marginRight: 10 },
   input: {
     flex: 1,
     height: 48,
     color: COLORS.textDark,
   },
-  eyeIcon: {
-    padding: 8,
-  },
+  eyeIcon: { padding: 8 },
   button: {
     backgroundColor: COLORS.primary,
     borderRadius: 12,
