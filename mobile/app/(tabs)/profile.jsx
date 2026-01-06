@@ -1,17 +1,17 @@
-import { useState } from 'react';
-import { View, Alert, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { useState, useEffect } from "react";
+import { View, Alert, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl} from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+
 import { API_URL } from "../../constants/api";
 import { useAuthStore } from "../../store/authStore";
-import { useEffect } from 'react';
 import styles from "../../assets/styles/profile.styles";
-import ProfileHeader from '../../components/ProfileHeader';
-import LogoutButton from '../../components/LogoutButton';
-import { Ionicons } from '@expo/vector-icons';
-import COLORS from '../../constants/colors';
-import { Image } from 'expo-image';
-import { sleep } from '.';
-import Loader from '../../components/Loader';
+import ProfileHeader from "../../components/ProfileHeader";
+import LogoutButton from "../../components/LogoutButton";
+import COLORS from "../../constants/colors";
+import Loader from "../../components/Loader";
+import { sleep } from ".";
 
 export default function Profile() {
   const [books, setBooks] = useState([]);
@@ -19,33 +19,28 @@ export default function Profile() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteBookId, setDeleteBookId] = useState(null);
 
-  const { token } = useAuthStore();
-
+  const { token, user } = useAuthStore();
   const router = useRouter();
-  
   const fetchData = async () => {
     try {
       setIsLoading(true);
-
       const response = await fetch(`${API_URL}/books/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to fetch user books");
+      if (!response.ok) throw new Error(data.message);
 
       setBooks(data);
     } catch (error) {
-      console.error("Error fetching data:", error);
-      Alert.alert("Error", "Failed to load profile data. Pull down to refresh.");
+      Alert.alert("Error", "Failed to load profile data");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!token) return;
-    fetchData();
+    if (token) fetchData();
   }, []);
 
   const handleDeleteBook = async (bookId) => {
@@ -58,66 +53,112 @@ export default function Profile() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to delete book");
+      if (!response.ok) throw new Error(data.message);
 
-      setBooks(books.filter((book) => book._id !== bookId));
-      Alert.alert("Success", "Recommendation deleted successfully");
+      setBooks((prev) => prev.filter((b) => b._id !== bookId));
+      Alert.alert("Success", "Recommendation deleted");
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to delete recommendation");
+      Alert.alert("Error", error.message);
     } finally {
       setDeleteBookId(null);
     }
   };
 
   const confirmDelete = (bookId) => {
-    Alert.alert("Delete Recommendation", "Are you sure you want to delete this recommendation?", [
+    Alert.alert("Delete Recommendation", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => handleDeleteBook(bookId) },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => handleDeleteBook(bookId),
+      },
     ]);
   };
 
-  const renderBookItem = ({item}) => (
+  const renderRatingStars = (rating) =>
+    Array.from({ length: 5 }, (_, i) => (
+      <Ionicons
+        key={i}
+        name={i < rating ? "star" : "star-outline"}
+        size={14}
+        color={i < rating ? "#f4b400" : COLORS.textSecondary}
+        style={{ marginRight: 2 }}
+      />
+    ));
+
+  const renderBookItem = ({ item }) => (
     <View style={styles.bookItem}>
       <Image source={item.image} style={styles.bookImage} />
+
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle}>{item.title}</Text>
-        <View style={styles.ratingContainer}>{renderRatingStars(item.rating)}</View>
+        <Text style={styles.bookAuthor}>{item.author}</Text>
+
+        <View style={styles.ratingContainer}>
+          {renderRatingStars(item.rating)}
+        </View>
+
         <Text style={styles.bookCaption} numberOfLines={2}>
-          {item.caption} 
+          {item.caption}
         </Text>
-        <Text style={styles.bookDate}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+
+        <Text style={styles.bookDate}>
+          {new Date(item.createdAt).toLocaleDateString()}
+        </Text>
       </View>
-      <TouchableOpacity style={styles.deleteButton} onPress={() => confirmDelete(item._id)}>
-        {deleteBookId === <item className="_id"></item> ? (
-          <ActivityIndicator size="small" color={COLORS.primary} />
-        ) : (
-          <Ionicons name="trash-outline" size={20} color={COLORS.primary} />
+
+      {/* ACTION BUTTONS */}
+      <View style={styles.actionButtons}>
+        {/* EDIT — only if owner */}
+        {item.user === user?._id && (
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() =>
+              router.push({
+                pathname: "/edit",
+                params: {
+                  id: item._id,
+                  title: item.title,
+                  author: item.author,
+                  caption: item.caption,
+                  rating: item.rating,
+                  image: item.image,
+                },
+              })
+            }
+          >
+            <Ionicons
+              name="create-outline"
+              size={20}
+              color={COLORS.primary}
+            />
+          </TouchableOpacity>
         )}
-      </TouchableOpacity>
+
+        {/* DELETE */}
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => confirmDelete(item._id)}
+        >
+          {deleteBookId === item._id ? (
+            <ActivityIndicator size="small" color={COLORS.primary} />
+          ) : (
+            <Ionicons
+              name="trash-outline"
+              size={20}
+              color={COLORS.primary}
+            />
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
-  const renderRatingStars = (rating) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <Ionicons
-          key={i}
-          name={i <= rating ? "star" : "star-outline"}
-          size={14}
-          color={i <= rating ? "#f4b400" : COLORS.textSecondary}
-          style={{ marginRight: 2 }}
-        />
-      );
-    }
-    return stars;
-  };  
-
-  const handleRefresh = async() => {
+  const handleRefresh = async () => {
     setRefreshing(true);
     await fetchData();
-    setRefreshing(false);
     await sleep(500);
+    setRefreshing(false);
   };
 
   if (isLoading && !refreshing) return <Loader />;
@@ -127,7 +168,6 @@ export default function Profile() {
       <ProfileHeader />
       <LogoutButton />
 
-      {/* YOUR RECOMMENDATIONS */}
       <View style={styles.booksHeader}>
         <Text style={styles.booksTitle}>Your Recommendations 📚</Text>
         <Text style={styles.booksCount}>{books.length} books</Text>
@@ -149,9 +189,16 @@ export default function Profile() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="book-outline" size={50} color={COLORS.textSecondary} />
+            <Ionicons
+              name="book-outline"
+              size={50}
+              color={COLORS.textSecondary}
+            />
             <Text style={styles.emptyText}>No recommendations yet</Text>
-            <TouchableOpacity style={styles.addButton} onPress={() => router.push("/create")}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => router.push("/create")}
+            >
               <Text style={styles.addButtonText}>Add Your First Book</Text>
             </TouchableOpacity>
           </View>

@@ -15,11 +15,9 @@ if (!image || !title || !caption || !rating || !author) {
   return res.status(400).json({ message: "Please provide all fields" });
 }
 
-// upload the image to cloudinary
 const uploadResponse = await cloudinary.uploader.upload(image);
 const imageUrl = uploadResponse.secure_url;
 
-// save to the database
 const newBook = new Book({
   title,
   author,
@@ -39,10 +37,48 @@ res.status(201).json(newBook);
   }
 });
 
-// pagination => infinite loading
+router.put("/:id", protectRoute, async (req, res) => {
+  try {
+    const { title, author, caption, rating, image } = req.body;
+
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    // only owner can edit
+    if (book.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // if image is updated
+    if (image && image !== book.image) {
+      if (book.image && book.image.includes("cloudinary")) {
+        const publicId = book.image.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(publicId);
+      }
+
+      const uploadResponse = await cloudinary.uploader.upload(image);
+      book.image = uploadResponse.secure_url;
+    }
+
+    // update fields (only if provided)
+    if (title) book.title = title;
+    if (author) book.author = author;
+    if (caption) book.caption = caption;
+    if (rating) book.rating = rating;
+
+    await book.save();
+
+    res.json(book);
+  } catch (error) {
+    console.error("Error updating book:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("/", protectRoute, async (req, res) => {
-  // example call from react native - frontend
-  // const response = await fetch("http://localhost:1000/api/books?page=1&limit=5");
+  
   try {
     const page = req.query.page || 1;
     const limit = req.query.limit || 2;
