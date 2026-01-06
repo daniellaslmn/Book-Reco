@@ -88,9 +88,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   bookAuthor: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
+    fontSize: 14.5,
+    fontWeight: "500",
+    color: COLORS.textDark,
     marginBottom: 6,
   },
   ratingContainer: {

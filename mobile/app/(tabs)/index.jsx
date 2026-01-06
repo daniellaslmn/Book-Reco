@@ -58,9 +58,28 @@ export default function Home() {
     }
   };
 
+  const fetchFavorites = async () => {
+  try {
+    const response = await fetch(`${API_URL}/books/favorites/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message);
+
+    // store ONLY book IDs
+    setFavorites(data.map((book) => book._id));
+    } catch (error) {
+      console.error("Error fetching favorites:", error.message);
+    }
+  };
+
+
   useEffect(() => {
+    if (!token) return;
     fetchBooks();
-  }, []);
+    fetchFavorites();
+  }, [token]);
 
   // useEffect(() => {
   //   if (!token) return;
@@ -134,7 +153,7 @@ export default function Home() {
 
       <View style={styles.bookDetails}>
         <Text style={styles.bookTitle}>{item.title}</Text>
-        <Text style={styles.bookAuthor}>{item.author}</Text>
+        <Text style={styles.bookAuthor}>By: {item.author}</Text>
         <View style={styles.ratingContainer}>{renderRatingStars(item.rating)}</View>
         <Text style={styles.caption}>{item.caption}</Text>
         <Text style={styles.date}>Shared on {formatPublishDate(item.createdAt)}</Text>
