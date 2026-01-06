@@ -2,33 +2,37 @@ import express from "express";
 import cloudinary from "../lib/cloudinary.js";
 import Book from "../models/Book.js";
 import protectRoute from "../middleware/auth.middleware.js";
+import User from "../models/User.js";
 
 const router = express.Router();
 
 router.post("/", protectRoute, async (req, res) => {
   try {
-    const { title, caption, rating, image } = req.body;
+    console.log("REQ BODY:", req.body); 
+   const { title, author, caption, rating, image } = req.body;
 
-    if (!image || !title || !caption || !rating) {
-      return res.status(400).json({ message: "Please provide all fields" });
-    }
+if (!image || !title || !caption || !rating || !author) {
+  return res.status(400).json({ message: "Please provide all fields" });
+}
 
-    // upload the image to cloudinary
-    const uploadResponse = await cloudinary.uploader.upload(image);
-    const imageUrl = uploadResponse.secure_url;
+// upload the image to cloudinary
+const uploadResponse = await cloudinary.uploader.upload(image);
+const imageUrl = uploadResponse.secure_url;
 
-    // save to the database
-    const newBook = new Book({
-      title,
-      caption,
-      rating,
-      image: imageUrl,
-      user: req.user._id,
-    });
+// save to the database
+const newBook = new Book({
+  title,
+  author,
+  caption,
+  rating,
+  image: imageUrl,
+  user: req.user._id,
+});
 
-    await newBook.save();
+await newBook.save();
 
-    res.status(201).json(newBook);
+res.status(201).json(newBook);
+
   } catch (error) {
     console.log("Error creating book", error);
     res.status(500).json({ message: error.message });
@@ -103,5 +107,54 @@ router.delete("/:id", protectRoute, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+//ADD TO FAVORTITES
+
+ router.post("/:id/favorites", protectRoute, async (req,res)=>{
+    try{
+      const bookId = req.params.id;
+
+      const user = await User.findById(req.user._id);
+
+      if (user.favorites.includes(bookId)){
+        return res.status(400).json({ message: "Book is already added in the favorites"});
+      }
+          user.favorites.push(bookId);
+          await user.save();
+
+          res.json({message: "Added to favorites"});
+      } catch (error){
+        res.status(500).json({message: error.message});
+      }
+  });
+  //delete favorites
+  router.delete("/:id/favorites", protectRoute, async (req,res)=>{
+    try{
+      const bookId = req.params.id;
+
+      const user = await User.findById(req.user._id);
+      user.favorites = user.favorites.filter(
+        (id) => id.toString() !== bookId
+      );
+
+      await user.save();
+      res.json({message:"Removed from the favorites"});
+    }catch (error) {
+      res.status(500).json({message:error.message});
+    }
+  });
+
+  //get favorites
+  router.get("/favorites/me", protectRoute, async(req,res) => {
+    try {
+      const user = await User.findById(req.user._id).populate({path: "favorites",
+        populate:{ path: "user", select:"username profileImage"} }
+      );
+      res.json(user.favorites);
+    } catch (error){
+        res.status(500).json({message: error.message});
+      }
+  });
+
 
 export default router;

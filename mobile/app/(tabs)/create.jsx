@@ -1,5 +1,16 @@
-import { useState } from "react";
-import { View, Text, KeyboardAvoidingView, ScrollView, Platform, TextInput, TouchableOpacity, Alert, Image, ActivityIndicator} from "react-native";
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { useRouter } from "expo-router";
 import styles from "../../assets/styles/create.styles";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,52 +20,62 @@ import { useAuthStore } from "../../store/authStore";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { API_URL } from "../../constants/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Create() {
   const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
   const [caption, setCaption] = useState("");
   const [rating, setRating] = useState(3);
-  const [image, setImage] = useState(null); // to display the selected image
+  const [image, setImage] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState(null); // state for token
 
   const router = useRouter();
-  const {token} = useAuthStore();
+
+  // Load token from auth store or AsyncStorage
+  const authStore = useAuthStore();
+  useEffect(() => {
+    if (authStore.token) {
+      setToken(authStore.token);
+    } else {
+      // fallback: load from AsyncStorage
+      const loadToken = async () => {
+        const storedToken = await AsyncStorage.getItem("token");
+        setToken(storedToken);
+      };
+      loadToken();
+    }
+  }, [authStore.token]);
 
   const pickImage = async () => {
     try {
-      // request permission if needed
       if (Platform.OS !== "web") {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
         if (status !== "granted") {
           Alert.alert("Permission Denied", "We need camera roll permissions to upload an image");
           return;
         }
       }
 
-      // launch image library
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: "images",
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.5, // lower quality for smaller base64
+        quality: 0.5,
         base64: true,
       });
 
       if (!result.canceled) {
         setImage(result.assets[0].uri);
 
-        // if base64 is provided, use it
-
-        if(result.assets[0].base64) {
+        if (result.assets[0].base64) {
           setImageBase64(result.assets[0].base64);
         } else {
-          // otherwise, comvert to base64
           const base64 = await FileSystem.readAsStringAsync(result.assets[0].uri, {
             encoding: FileSystem.EncodingType.Base64,
           });
-
           setImageBase64(base64);
         }
       }
@@ -65,53 +86,60 @@ export default function Create() {
   };
 
   const handleSubmit = async () => {
-    if (!title || !caption || !imageBase64 || !rating) {
+    if (!title || !author || !caption || !imageBase64 || !rating) {
       Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (!token) {
+      Alert.alert("Error", "You are not authenticated. Please login first.");
       return;
     }
 
     try {
       setLoading(true);
-        // get file extension from URI or default to jpeg
-        const uriParts = image.split(".");
-        const fileType = uriParts[uriParts.length - 1];
-        const imageType = fileType ? `image/${fileType.toLowerCase()}` : "image/jpeg";
 
-        const imageDataUrl = `data:${imageType};base64,${imageBase64}`;
+      console.log("Submitting book:", { title, author, caption, rating, image: imageBase64 });
 
-        const response = await fetch(`${API_URL}/books`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title,
-            caption,
-            rating: rating.toString(),
-            image: imageDataUrl,
-          }),
-        });
+      const uriParts = image.split(".");
+      const fileType = uriParts[uriParts.length - 1];
+      const imageType = fileType ? `image/${fileType.toLowerCase()}` : "image/jpeg";
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Something went wrong");
+      const imageDataUrl = `data:${imageType};base64,${imageBase64}`;
 
-        Alert.alert("Success", "Your book recommendation has been posted!");
-        setTitle("");
-        setCaption("");
-        setRating(3);
-        setImage(null);
-        setImageBase64(null);
-        router.push("/");
-        
+      const response = await fetch(`${API_URL}/books`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title,
+          author,
+          caption,
+          rating,
+          image: imageDataUrl,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Something went wrong");
+
+      Alert.alert("Success", "Your book recommendation has been posted!");
+      setTitle("");
+      setAuthor("");
+      setCaption("");
+      setRating(3);
+      setImage(null);
+      setImageBase64(null);
+      router.push("/");
     } catch (error) {
-        console.error("Error creating post:", error);
-        Alert.alert("Error", error.message || "Something went wrong");
+      console.error("Error creating post:", error);
+      Alert.alert("Error", error.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
-
 
   const renderRatingPicker = () => {
     const stars = [];
@@ -128,7 +156,6 @@ export default function Create() {
     }
     return <View style={styles.ratingContainer}>{stars}</View>;
   };
-
 
   return (
     <KeyboardAvoidingView
@@ -160,6 +187,26 @@ export default function Create() {
                   placeholderTextColor={COLORS.placeholderText}
                   value={title}
                   onChangeText={setTitle}
+                />
+              </View>
+            </View>
+
+            {/* AUTHOR */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Author</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={COLORS.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter author name"
+                  placeholderTextColor={COLORS.placeholderText}
+                  value={author}
+                  onChangeText={setAuthor}
                 />
               </View>
             </View>

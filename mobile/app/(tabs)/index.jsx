@@ -13,6 +13,7 @@ import Loader from '../../components/Loader';
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function Home() {
+  const [favorites, setFavorites] = useState([]);
   const { token }= useAuthStore();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +66,39 @@ export default function Home() {
   //   if (!token) return;
   //   fetchBooks();
   // }, [token]);
+// Favorites
+
+  const toggleFavorite = async (bookId) => {
+  try {
+    // Determine if book is currently favorite
+    const isFav = favorites.includes(bookId);
+
+    const response = await fetch(`${API_URL}/books/${bookId}/favorites`, {
+      method: isFav ? "DELETE" : "POST", // POST to add, DELETE to remove
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Server returned HTML or invalid JSON:\n" + text);
+    }
+    if (!response.ok) throw new Error(data.message || "Failed to update favorites");
+    setFavorites((prev) =>
+      isFav
+        ? prev.filter((id) => id !== bookId)
+        : [...prev, bookId]
+    );
+
+  } catch (error) {
+    console.error("Favorite error:", error.message);
+  }
+};
 
 
   const handleLoadMore = async () => {
@@ -73,13 +107,25 @@ export default function Home() {
     }
   };
 
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item }) => {
+
+    const isFavorite = favorites.includes(item._id);
+    return (
     <View style={styles.bookCard}>
       <View style={styles.bookHeader}>
         <View style={styles.userInfo}>
           <Image source={{ uri: item.user.profileImage }} style={styles.avatar} />
           <Text style={styles.username}>{item.user.username}</Text>
         </View>
+
+        {/*button*/}
+        <TouchableOpacity onPress={() => toggleFavorite(item._id)}>
+          <Ionicons
+            name={isFavorite ? "heart":'heart-outline'}
+            size={24}
+            color="red"
+          />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.bookImageContainer}>
@@ -88,12 +134,14 @@ export default function Home() {
 
       <View style={styles.bookDetails}>
         <Text style={styles.bookTitle}>{item.title}</Text>
+        <Text style={styles.bookAuthor}>{item.author}</Text>
         <View style={styles.ratingContainer}>{renderRatingStars(item.rating)}</View>
         <Text style={styles.caption}>{item.caption}</Text>
         <Text style={styles.date}>Shared on {formatPublishDate(item.createdAt)}</Text>
       </View>
     </View>
   );
+};
 
   const renderRatingStars = (rating) => {
     const stars = [];

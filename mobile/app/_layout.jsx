@@ -6,7 +6,6 @@ import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
 
 import { useAuthStore } from "../store/authStore";
-
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
