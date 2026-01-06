@@ -108,6 +108,18 @@ router.delete("/:id", protectRoute, async (req, res) => {
   }
 });
 
+  //get favorites
+  router.get("/favorites/me", protectRoute, async(req,res) => {
+    try {
+      const user = await User.findById(req.user._id).populate({path: "favorites",
+        populate:{ path: "user", select:"username profileImage"} }
+      );
+      res.json(user.favorites);
+    } catch (error){
+        res.status(500).json({message: error.message});
+      }
+  });
+
 //ADD TO FAVORTITES
 
  router.post("/:id/favorites", protectRoute, async (req,res)=>{
@@ -142,18 +154,6 @@ router.delete("/:id", protectRoute, async (req, res) => {
     }catch (error) {
       res.status(500).json({message:error.message});
     }
-  });
-
-  //get favorites
-  router.get("/favorites/me", protectRoute, async(req,res) => {
-    try {
-      const user = await User.findById(req.user._id).populate({path: "favorites",
-        populate:{ path: "user", select:"username profileImage"} }
-      );
-      res.json(user.favorites);
-    } catch (error){
-        res.status(500).json({message: error.message});
-      }
   });
 
 
