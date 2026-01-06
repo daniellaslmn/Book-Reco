@@ -87,69 +87,59 @@ export default function Profile() {
     ));
 
   const renderBookItem = ({ item }) => (
-    <View style={styles.bookItem}>
-      <Image source={item.image} style={styles.bookImage} />
+  <View style={styles.bookItem}>
+    <Image source={{ uri: item.image }} style={styles.bookImage} />
 
-      <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle}>{item.title}</Text>
-        <Text style={styles.bookAuthor}>{item.author}</Text>
+    <View style={styles.bookInfo}>
+      <Text style={styles.bookTitle}>{item.title}</Text>
+      <Text style={styles.bookAuthor}>{item.author}</Text>
 
-        <View style={styles.ratingContainer}>
-          {renderRatingStars(item.rating)}
-        </View>
-
-        <Text style={styles.bookCaption} numberOfLines={2}>
-          {item.caption}
-        </Text>
-
-        <Text style={styles.bookDate}>
-          {new Date(item.createdAt).toLocaleDateString()}
-        </Text>
+      <View style={styles.ratingContainer}>
+        {renderRatingStars(item.rating)}
       </View>
 
-      {/* ACTION BUTTONS */}
-      <View style={styles.actionButtons}>
-        {/* EDIT — only if owner */}
-        {item.user === user?._id && (
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() =>
-              router.push({
-                pathname: "/edit",
-                params: {
-                  id: item._id,
-                  title: item.title,
-                  author: item.author,
-                  caption: item.caption,
-                  rating: item.rating,
-                  image: item.image,
-                },
-              })
-            }
-          >
-            <Ionicons
-              name="create-outline"
-              size={20}
-              color={COLORS.primary}
-            />
-          </TouchableOpacity>
-        )}
+      <Text style={styles.bookCaption} numberOfLines={2}>
+        {item.caption}
+      </Text>
 
-        {/* DELETE */}
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => confirmDelete(item._id)}
-        >
-          {deleteBookId === item._id ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          ) : (
-            <Ionicons
-              name="trash-outline"
-              size={20}
-              color={COLORS.primary}
-            />
-          )}
-        </TouchableOpacity>
+      <Text style={styles.bookDate}>
+        {new Date(item.createdAt).toLocaleDateString()}
+      </Text>
+    </View>
+
+    {/* ACTION BUTTONS */}
+    <View style={styles.actionButtons}>
+      {/* EDIT */}
+      <TouchableOpacity
+        style={styles.iconButton}
+        onPress={() =>
+          router.push({
+            pathname: "/edit",
+            params: {
+              id: item._id,
+              title: item.title,
+              author: item.author,
+              caption: item.caption,
+              rating: item.rating,
+              image: item.image,
+            },
+          })
+        }
+      >
+        <Ionicons name="create-outline" size={22} color={COLORS.primary} />
+      </TouchableOpacity>
+
+      {/* 🗑 DELETE */}
+      <TouchableOpacity
+        style={styles.iconButton}
+        onPress={() => confirmDelete(item._id)}
+      >
+        {deleteBookId === item._id ? (
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        ) : (
+          <Ionicons name="trash-outline" size={22} color={COLORS.primary} />
+        )}
+      </TouchableOpacity>
       </View>
     </View>
   );

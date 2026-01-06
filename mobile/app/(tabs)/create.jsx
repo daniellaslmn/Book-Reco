@@ -30,17 +30,16 @@ export default function Create() {
   const [image, setImage] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState(null); // state for token
+  const [token, setToken] = useState(null); 
 
   const router = useRouter();
 
-  // Load token from auth store or AsyncStorage
   const authStore = useAuthStore();
   useEffect(() => {
     if (authStore.token) {
       setToken(authStore.token);
     } else {
-      // fallback: load from AsyncStorage
+      
       const loadToken = async () => {
         const storedToken = await AsyncStorage.getItem("token");
         setToken(storedToken);

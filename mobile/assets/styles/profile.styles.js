@@ -169,6 +169,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
+
+  actionButtons: {
+  position: "absolute",
+  right: 12,
+  top: 12,
+  flexDirection: "row",
+  gap: 10,
+  },
+
+  iconButton: {
+    padding: 6,
+  },
+
 });
 
 export default styles;
