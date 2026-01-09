@@ -175,11 +175,11 @@ const styles = StyleSheet.create({
   right: 12,
   top: 12,
   flexDirection: "row",
-  gap: 10,
+  gap: 1,
   },
 
   iconButton: {
-    padding: 6,
+    padding: 5,
   },
 
 });
