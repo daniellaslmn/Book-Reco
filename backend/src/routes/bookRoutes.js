@@ -77,32 +77,23 @@ router.put("/:id", protectRoute, async (req, res) => {
   }
 });
 
+// backend
 router.get("/", protectRoute, async (req, res) => {
-  
-  try {
-    const page = req.query.page || 1;
-    const limit = req.query.limit || 2;
-    const skip = (page - 1) * limit;
+  const books = await Book.find()
+    .sort({ createdAt: -1 })
+    .populate("user", "username profileImage");
 
-    const books = await Book.find()
-      .sort({ createdAt: -1 }) // desc
-      .skip(skip)
-      .limit(limit)
-      .populate("user", "username profileImage");
+  // mark favorites for the current user
+  const user = await User.findById(req.user._id);
+  const booksWithFav = books.map(book => ({
+    ...book.toObject(),
+    isFavorite: user.favorites.includes(book._id),
+  }));
 
-    const totalBooks = await Book.countDocuments();
- 
-    res.send({
-      books,
-      // currentPage: page,
-      // totalBooks,
-      totalPages: Math.ceil(totalBooks / limit),
-    });
-  } catch (error) {
-    console.log("Error in get all books route", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
+  res.json({ books: booksWithFav });
 });
+
+
 
 // get recommended books by the logged in user
 router.get("/user", protectRoute, async (req, res) => {

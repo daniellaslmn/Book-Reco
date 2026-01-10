@@ -1,20 +1,26 @@
-import { View, Text, FlatList, RefreshControl } from "react-native";
+import { View, Text, FlatList, RefreshControl, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuthStore } from "../../store/authStore";
+import { useFavoriteStore } from "../../store/favoriteStore";
 import { API_URL } from "../../constants/api";
 import COLORS from "../../constants/colors";
 import styles from "../../assets/styles/home.styles";
 import Loader from "../../components/Loader";
 import { formatPublishDate } from "../../lib/utils";
+import { Alert } from 'react-native';
+
 
 export default function Favorites() {
   const { token } = useAuthStore();
   const [favorites, setFavorites] = useState([]);
+  const updatedAt = useFavoriteStore((state) => state.updatedAt); // subscribe to changes
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { refreshFavorites } = useFavoriteStore();
+  
 
   // Fetch favorite books
   const fetchFavorites = async (refresh = false) => {
@@ -41,13 +47,45 @@ export default function Favorites() {
       console.error("Favorite error:", error.message);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  useEffect(() => {
+   useEffect(() => {
     fetchFavorites();
-  }, []);
+  }, [updatedAt, token]);
+
+  // Unfavorite
+  const unfavoriteBook = async (bookId) => {
+  try {
+    // Call API to remove favorite
+     const response = await fetch(`${API_URL}/books/${bookId}/favorites`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = {};
+      }
+      throw new Error(data?.message || "Failed to remove from favorites");
+    }
+
+    // Update local state immediately
+    setFavorites((prev) => prev.filter((b) => b._id !== bookId));
+  // Notify Home
+  refreshFavorites();
+
+
+    Alert.alert("Removed from Favorites", "Book removed from your favorites successfully!");
+
+  } catch (error) {
+    console.error("Unfavorite error:", error.message);
+  }
+};
 
   const renderRatingStars = (rating) =>
     Array.from({ length: 5 }, (_, i) => (
@@ -67,7 +105,14 @@ export default function Favorites() {
           <Image source={{ uri: item.user.profileImage }} style={styles.avatar} />
           <Text style={styles.username}>{item.user.username}</Text>
         </View>
-        <Ionicons name="heart" size={22} color="red" />
+        <TouchableOpacity onPress={() => unfavoriteBook(item._id)}>
+            <Ionicons
+              name="heart"
+              size={22}
+              color="red"
+            />
+          </TouchableOpacity>
+
       </View>
 
       <View style={styles.bookImageContainer}>
@@ -116,5 +161,6 @@ export default function Favorites() {
         }
       />
     </View>
+    
   );
 }

@@ -8,10 +8,12 @@ import styles from "../assets/styles/create.styles";
 import COLORS from "../constants/colors";
 import { API_URL } from "../constants/api";
 import { useAuthStore } from "../store/authStore";
+import { useBookStore } from "../store/bookStore";
 
 export default function Edit() {
   const router = useRouter();
   const { token } = useAuthStore();
+  const { refreshBooks } = useBookStore();
   const params = useLocalSearchParams();
 
   const initialized = useRef(false);
@@ -80,9 +82,10 @@ export default function Edit() {
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
+      refreshBooks();
 
       Alert.alert("Success", "Recommendation updated!");
-      router.back();
+      router.replace({ pathname: "/profile", params: { refresh: true } });
     } catch (error) {
       Alert.alert("Error", error.message);
     } finally {

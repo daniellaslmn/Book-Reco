@@ -2,6 +2,8 @@ import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshContr
 import { useAuthStore } from '../../store/authStore';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
+import { useFavoriteStore } from "../../store/favoriteStore";
+import { useBookStore } from "../../store/bookStore";
 
 import styles from '../../assets/styles/home.styles';
 import { API_URL } from '../../constants/api';
@@ -9,6 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { formatPublishDate } from '../../lib/utils';
 import COLORS from '../../constants/colors';
 import Loader from '../../components/Loader';
+import { Alert } from 'react-native';
+
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -20,6 +24,9 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const { updatedAt: favoritesUpdatedAt, refreshFavorites } = useFavoriteStore();
+  const { updatedAt: booksUpdatedAt, refreshBooks } = useBookStore();
+
 
   const fetchBooks = async (pageNum=1, refresh=false) => {
     // if (!token) return; //----------
@@ -56,8 +63,13 @@ export default function Home() {
         setRefreshing(false);
       } else setLoading(false);
     }
-  };
+  
 
+  };
+  useEffect(() => {
+      if (!token) return;
+      fetchBooks(1, true); // fetch books when booksUpdatedAt changes
+    }, [booksUpdatedAt, token]);
   const fetchFavorites = async () => {
   try {
     const response = await fetch(`${API_URL}/books/favorites/me`, {
@@ -79,7 +91,7 @@ export default function Home() {
     if (!token) return;
     fetchBooks();
     fetchFavorites();
-  }, [token]);
+  }, [favoritesUpdatedAt]);
 
   // useEffect(() => {
   //   if (!token) return;
@@ -108,16 +120,21 @@ export default function Home() {
       throw new Error("Server returned HTML or invalid JSON:\n" + text);
     }
     if (!response.ok) throw new Error(data.message || "Failed to update favorites");
+
+    const isNowFav = !isFav;
     setFavorites((prev) =>
-      isFav
-        ? prev.filter((id) => id !== bookId)
-        : [...prev, bookId]
+      isNowFav ? [...prev, bookId] : prev.filter((id) => id !== bookId)
     );
+      refreshFavorites();
+
+     if (isNowFav) {
+      Alert.alert("Added to Favorites", "Book added to your favorites successfully!");
+    }
 
   } catch (error) {
     console.error("Favorite error:", error.message);
   }
-};
+};  
 
 
   const handleLoadMore = async () => {
@@ -138,13 +155,13 @@ export default function Home() {
         </View>
 
         {/*button*/}
-        <TouchableOpacity onPress={() => toggleFavorite(item._id)}>
-          <Ionicons
-            name={isFavorite ? "heart":'heart-outline'}
-            size={24}
-            color="red"
-          />
-        </TouchableOpacity>
+       <TouchableOpacity onPress={() => toggleFavorite(item._id)}>
+            <Ionicons
+              name={favorites.includes(item._id) ? "heart" : "heart-outline"}
+              size={24}
+              color="red"
+            />
+            </TouchableOpacity>
       </View>
 
       <View style={styles.bookImageContainer}>

@@ -16,6 +16,7 @@ import styles from "../../assets/styles/create.styles";
 import { Ionicons } from "@expo/vector-icons";
 import COLORS from "../../constants/colors";
 import { useAuthStore } from "../../store/authStore";
+import { useBookStore } from "../../store/bookStore";
 
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -31,6 +32,7 @@ export default function Create() {
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(null); 
+  const { refreshBooks } = useBookStore();
 
   const router = useRouter();
 
@@ -131,7 +133,9 @@ export default function Create() {
       setRating(3);
       setImage(null);
       setImageBase64(null);
-      router.push("/");
+
+      refreshBooks();
+      router.push("/"); 
     } catch (error) {
       console.error("Error creating post:", error);
       Alert.alert("Error", error.message || "Something went wrong");

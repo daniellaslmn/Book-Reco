@@ -12,12 +12,15 @@ import LogoutButton from "../../components/LogoutButton";
 import COLORS from "../../constants/colors";
 import Loader from "../../components/Loader";
 import { sleep } from ".";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback } from "react";
 
 export default function Profile() {
   const [books, setBooks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deleteBookId, setDeleteBookId] = useState(null);
+  const params = useLocalSearchParams();
 
   const { token, user } = useAuthStore();
   const router = useRouter();
@@ -150,6 +153,14 @@ export default function Profile() {
     await sleep(500);
     setRefreshing(false);
   };
+  useFocusEffect(
+    useCallback(() => {
+      if (params.refresh) {
+        handleRefresh();
+        router.replace({ pathname: "/profile" });
+      }
+    }, [params.refresh])
+  );
 
   if (isLoading && !refreshing) return <Loader />;
 
