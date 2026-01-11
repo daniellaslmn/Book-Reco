@@ -32,7 +32,7 @@ export default function Create() {
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(null); 
-  const { refreshBooks } = useBookStore();
+  const { notifyBookCreated } = useBookStore();
 
   const router = useRouter();
 
@@ -124,6 +124,10 @@ export default function Create() {
       });
 
       const data = await response.json();
+      const bookToAdd = {
+        ...data,
+          _id: data._id || data.id,
+        };
       if (!response.ok) throw new Error(data.message || "Something went wrong");
 
       Alert.alert("Success", "Your book recommendation has been posted!");
@@ -134,8 +138,9 @@ export default function Create() {
       setImage(null);
       setImageBase64(null);
 
-      refreshBooks();
-      router.push("/"); 
+      notifyBookCreated(bookToAdd);
+      router.push("/");
+
     } catch (error) {
       console.error("Error creating post:", error);
       Alert.alert("Error", error.message || "Something went wrong");
@@ -143,7 +148,6 @@ export default function Create() {
       setLoading(false);
     }
   };
-
   const renderRatingPicker = () => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {

@@ -25,7 +25,9 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const { updatedAt: favoritesUpdatedAt, refreshFavorites } = useFavoriteStore();
-  const { updatedAt: booksUpdatedAt, refreshBooks } = useBookStore();
+  const { updatedAt: booksUpdatedAt } = useBookStore();
+  const deletedBookId = useBookStore((state) => state.deletedBookId);
+
 
 
   const fetchBooks = async (pageNum=1, refresh=false) => {
@@ -63,13 +65,8 @@ export default function Home() {
         setRefreshing(false);
       } else setLoading(false);
     }
-  
-
   };
-  useEffect(() => {
-      if (!token) return;
-      fetchBooks(1, true); // fetch books when booksUpdatedAt changes
-    }, [booksUpdatedAt, token]);
+
   const fetchFavorites = async () => {
   try {
     const response = await fetch(`${API_URL}/books/favorites/me`, {
@@ -86,24 +83,31 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+  if (!token) return;
+    fetchBooks(1, true); // refresh the books whenever booksUpdatedAt changes
+}, [booksUpdatedAt, token]);
 
   useEffect(() => {
-    if (!token) return;
-    fetchBooks();
-    fetchFavorites();
-  }, [favoritesUpdatedAt]);
+  if (!token) return;
+  fetchFavorites();
+}, [favoritesUpdatedAt]);
+
+useEffect(() => {
+  if (!deletedBookId) return;
+
+  setBooks((prev) => prev.filter((b) => b._id !== deletedBookId));
+}, [deletedBookId]);
 
   // useEffect(() => {
   //   if (!token) return;
   //   fetchBooks();
   // }, [token]);
 // Favorites
-
   const toggleFavorite = async (bookId) => {
   try {
     // Determine if book is currently favorite
     const isFav = favorites.includes(bookId);
-
     const response = await fetch(`${API_URL}/books/${bookId}/favorites`, {
       method: isFav ? "DELETE" : "POST", // POST to add, DELETE to remove
       headers: {
@@ -135,16 +139,12 @@ export default function Home() {
     console.error("Favorite error:", error.message);
   }
 };  
-
-
   const handleLoadMore = async () => {
     if (hasMore && !loading && !refreshing) {
       await fetchBooks(page + 1);
     }
   };
-
   const renderItem = ({ item }) => {
-
     const isFavorite = favorites.includes(item._id);
     return (
     <View style={styles.bookCard}>
@@ -195,10 +195,9 @@ export default function Home() {
     return stars;
   };
 
-  if (loading) return <Loader />;
-
-
-
+  if (loading && books.length === 0) {
+    return <Loader />;
+  }
   return (
     <View style={styles.container}>
       <FlatList 
@@ -219,7 +218,7 @@ export default function Home() {
         onEndReachedThreshold={0.1}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Book Reco 📚</Text>
+            <Text style={styles.headerTitle}>Book Reco📚</Text>
             <Text style={styles.headerSubtitle}>Discover great reads from the community👇</Text>
           </View>
         }

@@ -6,6 +6,7 @@ import { Image } from "expo-image";
 
 import { API_URL } from "../../constants/api";
 import { useAuthStore } from "../../store/authStore";
+import { useBookStore } from "../../store/bookStore";
 import styles from "../../assets/styles/profile.styles";
 import ProfileHeader from "../../components/ProfileHeader";
 import LogoutButton from "../../components/LogoutButton";
@@ -21,8 +22,10 @@ export default function Profile() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteBookId, setDeleteBookId] = useState(null);
   const params = useLocalSearchParams();
+  const notifyBookDeleted = useBookStore((state) => state.notifyBookDeleted);
+  const booksUpdatedAt = useBookStore((state) => state.updatedAt);
+  const { token } = useAuthStore();
 
-  const { token, user } = useAuthStore();
   const router = useRouter();
   const fetchData = async () => {
     try {
@@ -43,8 +46,8 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    if (token) fetchData();
-  }, []);
+  if (token) fetchData();
+}, [token, booksUpdatedAt]);
 
   const handleDeleteBook = async (bookId) => {
     try {
@@ -54,10 +57,15 @@ export default function Profile() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      let data;
+      try {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
+      }
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-
+      notifyBookDeleted(bookId);
       setBooks((prev) => prev.filter((b) => b._id !== bookId));
       Alert.alert("Success", "Recommendation deleted");
     } catch (error) {
